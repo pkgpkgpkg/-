@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TeleWatching</title>
+    
+    <!-- Подключаем мягкий и красивый шрифт Nunito -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* Общие настройки */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        body {
+            background-color: #f0f8ff; /* Очень светлый голубой базовый цвет */
+            color: #334155;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* --- АНИМИРОВАННЫЙ ЗАДНИЙ ФОН (Облака/Аврора) --- */
+        .bg-shapes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.7;
+            animation: float 20s infinite alternate cubic-bezier(0.45, 0.05, 0.55, 0.95);
+        }
+
+        .shape-1 {
+            width: 600px;
+            height: 600px;
+            background: #a1c4fd;
+            top: -150px;
+            left: -150px;
+        }
+
+        .shape-2 {
+            width: 500px;
+            height: 500px;
+            background: #c2e9fb;
+            bottom: -100px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+
+        .shape-3 {
+            width: 700px;
+            height: 700px;
+            background: #e0c3fc;
+            top: 30%;
+            left: 20%;
+            animation-delay: -10s;
+            opacity: 0.5;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(100px, 50px) scale(1.1); }
+            100% { transform: translate(-50px, 150px) scale(0.9); }
+        }
+
+        /* Шапка сайта */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-container img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 4px 15px rgba(21, 101, 192, 0.2);
+        }
+
+        .logo-container h1 {
+            font-size: 26px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #1e3a8a, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
+        }
+
+        /* Бургер-меню */
+        .burger {
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px;
+            z-index: 101;
+        }
+
+        .burger span {
+            display: block;
+            width: 28px;
+            height: 3px;
+            background-color: #3b82f6;
+            border-radius: 5px;
+            transition: 0.4s ease;
+        }
+
+        /* Боковое меню */
+        .side-menu {
+            position: fixed;
+            top: 0;
+            right: -320px;
+            width: 300px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+            transition: 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 99;
+            padding-top: 90px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .side-menu.active {
+            right: 0;
+        }
+
+        .menu-item {
+            padding: 18px 30px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e40af;
+            cursor: pointer;
+            transition: 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: #3b82f6;
+            transform: scaleY(0);
+            transition: 0.3s ease;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.8);
+            padding-left: 40px;
+        }
+
+        .menu-item:hover::before {
+            transform: scaleY(1);
+        }
+
+        /* Основной контент */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 50px 20px;
+            gap: 50px;
+        }
+
+        .media-container {
+    width: 100%;
+    max-width: 240px; /* Уменьшаем ширину, чтобы анимация стала компактной */
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: floatUp 1s ease-out;
+    /* Полностью убрали фон, размытие, рамки и тени */
+}
+
+.media-container img,
+.media-container video {
+    width: 100%;
+    height: auto;
+    object-fit: contain; /* Картинка полностью помещается без обрезки краев */
+    display: block;
+}
+
+
+        .about-section {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(15px);
+            padding: 40px;
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.03);
+            text-align: center;
+            line-height: 1.8;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            animation: floatUp 1.2s ease-out;
+        }
+
+        .about-section h2 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #1e3a8a;
+            margin-bottom: 20px;
+        }
+
+        /* Кнопка "Попробовать бесплатно" */
+        .cta-btn {
+            display: inline-block;
+            text-decoration: none;
+            padding: 20px 50px;
+            font-size: 22px;
+            font-weight: 800;
+            color: white;
+            border-radius: 50px;
+            background: linear-gradient(135deg, #60a5fa, #3b82f6, #60a5fa);
+            background-size: 200% auto;
+            box-shadow: 0 15px 30px rgba(59, 130, 246, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: pulseShimmer 3s infinite linear, floatUp 1.4s ease-out;
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-8px) scale(1.03);
+            box-shadow: 0 20px 40px rgba(59, 130, 246, 0.5);
+        }
+
+        @keyframes pulseShimmer {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        @keyframes floatUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Футер */
+        footer {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 30px 20px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.5);
+            margin-top: auto;
+        }
+
+        .footer-content p {
+            color: #64748b;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .footer-content .copyright {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 15px;
+        }
+
+        /* Модальные окна */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.2);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.5s ease;
+            z-index: 200;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-box {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            padding: 35px;
+            border-radius: 25px;
+            width: 90%;
+            max-width: 450px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 1);
+            transform: translateY(40px) scale(0.95);
+            transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            position: relative;
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-box h3 {
+            color: #1e3a8a;
+            margin-bottom: 25px;
+            font-size: 26px;
+            font-weight: 800;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 28px;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: 0.3s;
+            line-height: 1;
+        }
+
+        .close-modal:hover {
+            color: #ef4444;
+            transform: rotate(90deg);
+        }
+
+        /* Дизайн ПРОФИЛЯ */
+        .profile-status {
+            display: inline-block;
+            background: #fee2e2;
+            color: #ef4444;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .profile-stats {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            text-align: left;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+            border: 1px solid #f1f5f9;
+        }
+
+        .profile-stats div {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .profile-stats div:last-child {
+            border-bottom: none;
+        }
+
+        .profile-stats div span:last-child {
+            color: #1e40af;
+            font-weight: 800;
+        }
+
+        /* Блок Реферальной системы */
+        .referral-box {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border: 1px dashed #7dd3fc;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .referral-box h4 {
+            color: #0369a1;
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+
+        .referral-box p {
+            color: #0284c7;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Кнопки в профиле (Синяя и Белая) */
+        .auth-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn-auth {
+            display: block;
+            text-decoration: none;
+            padding: 15px;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 700;
+            transition: 0.3s ease;
+        }
+
+        .btn-blue {
+            background: #3b82f6;
+            color: white;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-blue:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .btn-white {
+            background: white;
+            color: #3b82f6;
+            border: 2px solid #eff6ff;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+        }
+
+        .btn-white:hover {
+            border-color: #3b82f6;
+            color: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        /* Кнопка поддержки */
+        .support-btn {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 15px 30px;
+            background: #eff6ff;
+            color: #2563eb;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 700;
+            transition: 0.3s;
+            border: 1px solid transparent;
+        }
+
+        .support-btn:hover {
+            background: white;
+            border-color: #bfdbfe;
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15);
+            transform: translateY(-3px);
+        }
+        
+    </style>
+</head>
+<body>
+
+    <!-- Анимированный задний фон (Аврора) -->
+    <div class="bg-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <!-- Шапка -->
+    <header>
+        <div class="logo-container">
+            <img src="pop.jpeg" alt="Логотип">
+            <h1>TeleWatching</h1>
+        </div>
+        
+        <div class="burger" id="burger-btn" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </header>
+
+    <!-- Боковое меню -->
+    <nav class="side-menu" id="side-menu">
+        <div class="menu-item" onclick="openModal('modal-profile')">Профиль</div>
+        <div class="menu-item" onclick="openModal('modal-support')">Поддержка</div>
+        <div class="menu-item" onclick="openModal('modal-faq')">Часто задаваемые вопросы</div>
+    </nav>
+
+    <!-- Основной контент -->
+    <main>
+        <!-- Видео блок -->
+        <div class="media-container">
+    <img src="pup.webp" alt="Media content">
+</div>
+
+
+        <!-- О нас -->
+        <section class="about-section">
+            <h2>О нас</h2>
+            <p>
+                TeleWatching - сервис для восстановления удаленных чатов и сообщений из них.
+ Сервис работает основе плагинов ExtraGram и флеш-сканеров.
+ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤДля того что бы пользоваться сервисом нужно войти в свой аккаунт через рабочего бота и не выгонять активную сессию до полного сканирования удаленных чатов.
+ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤВаши данные остаются на вашем устройстве и не хранятся в облаке, ваши данные остаются в безопасности и мы не имеем доступа к вашим аккаунтам.
+ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤВам доступно бесплатный пробный период на восстановления 10 чатов любого срока до 4 лет!
+            </p>
+        </section>
+
+        <!-- Главная кнопка -->
+        <a href="https://t.me/TeleWatchingLogin_bot" target="_blank" class="cta-btn">
+            Попробовать бесплатно!
+        </a>
+    </main>
+
+    <!-- Футер -->
+    <footer>
+        <div class="footer-content">
+            <p>TeleWatching — Твой надежный инструмент</p>
+            <p>Политика конфиденциальности &nbsp;|&nbsp; Условия использования</p>
+            <div class="copyright">© 2025-2026 TeleWatching. Все права защищены.</div>
+        </div>
+    </footer>
+
+    <!-- МОДАЛЬНЫЕ ОКНА -->
+    
+    <!-- 1. Модальное окно: Профиль -->
+    <div class="modal-overlay" id="modal-profile" onclick="closeModal(event, 'modal-profile')">
+        <div class="modal-box">
+            <span class="close-modal" onclick="closeModalBtn('modal-profile')">&times;</span>
+            <h3>Ваш профиль</h3>
+            
+            <div class="profile-status">Вход не выполнен</div>
+            
+            <div class="profile-stats">
+                <div><span>Ваш ID:</span> <span id="random-id">#000000</span></div>
+                <div><span>Баланс:</span> <span>0 ₽</span></div>
+                <div><span>Рефералов:</span> <span>0</span></div>
+            </div>
+
+            <div class="referral-box">
+                <h4>Реферальная система</h4>
+                <p>Войдите через аккаунт Telegram и подтвердите его, чтобы пользоваться реферальной системой.</p>
+            </div>
+
+            <div class="auth-buttons">
+                <a href="https://t.me/TeleWatchingLogin_bot" target="_blank" class="btn-auth btn-blue">Войти</a>
+                <a href="https://t.me/TeleWatchingLogin_bot" target="_blank" class="btn-auth btn-white">Зарегистрироваться</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Модальное окно: Поддержка -->
+    <div class="modal-overlay" id="modal-support" onclick="closeModal(event, 'modal-support')">
+        <div class="modal-box">
+            <span class="close-modal" onclick="closeModalBtn('modal-support')">&times;</span>
+            <h3>Служба поддержки</h3>
+            <p style="color: #64748b; margin-top: 10px; line-height: 1.6;">Если вы столкнулись с проблемой, появились вопросы или предложения — напишите в нашего бота поддержки в Telegram. Мы всегда рады помочь!</p>
+            <a href="https://t.me/TeleWatchingSup_bot" target="_blank" class="support-btn">Перейти в бота</a>
+        </div>
+    </div>
+
+        <!-- 4. Модальное окно: FAQ -->
+    <div class="modal-overlay" id="modal-faq" onclick="closeModal(event, 'modal-faq')">
+        <div class="modal-box">
+            <span class="close-modal" onclick="closeModalBtn('modal-faq')">&times;</span>
+            <h3>Часто задаваемые вопросы</h3>
+            
+            <div style="color: #475569; text-align: left; margin-top: 20px; line-height: 1.6; font-size: 15px;">
+                
+                <div style="margin-bottom: 18px;">
+                    <b style="color: #1e3a8a; font-size: 16px; display: block; margin-bottom: 4px;">1. Как работает TeleWatching?</b>
+                    <p>Сервис использует специальный плагин на базе ExtraGram, который анализирует кеш  и открытые данные со стороны сервера Telegram для поиска сообщений которые были удалены.</p>
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <b style="color: #1e3a8a; font-size: 16px; display: block; margin-bottom: 4px;">2. Безопасно ли это для аккаунта Telegram?</b>
+                    <p>Да, абсолютно. Плагин работает в рамках стандартного API Telegram и не передает ваши пароли, сессии или личные данные третьим лицам.</p>
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <b style="color: #1e3a8a; font-size: 16px; display: block; margin-bottom: 4px;">3. Можно ли восстановить старые сообщения?</b>
+                    <p>Да, Наш плагин использует зашифрованую обфускацию для раскрытия ХЭШ-а сообщений.</p>
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <b style="color: #1e3a8a; font-size: 16px; display: block; margin-bottom: 4px;">4. Сохраняются ли медиафайлы и голосовые?</b>
+                    <p>Да, сервис сохраняет не только текстовые сообщения, но и фотографии, видео, видеосообщения («кружочки»), голосовые и документы из диалогов.</p>
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <b style="color: #1e3a8a; font-size: 16px; display: block; margin-bottom: 4px;">5. Как начать пользоваться сервисом?</b>
+                    <p>Нажмите кнопку «Попробовать бесплатно» на сайте, авторизуйтесь через нашего Telegram-бота и следуйте простой пошаговой инструкции по установке.</p>
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <b style="color: #1e3a8a; font-size: 16px; display: block; margin-bottom: 4px;">6. Узнает ли собеседник о сохранении?</b>
+                    <p>Нет, все происходит абсолютно анонимно. У собеседника сообщение просто исчезнет из чата, и никаких уведомлений о том, что у вас осталась копия, он не получит.</p>
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <b style="color: #1e3a8a; font-size: 16px; display: block; margin-bottom: 4px;">7. Работает ли сервис в групповых чатах?</b>
+                    <p>Да, плагин фиксирует удаленные и измененные сообщения не только в личных диалогах, но и в группах и супергруппах, в которых вы состоите.</p>
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <b style="color: #1e3a8a; font-size: 16px; display: block; margin-bottom: 4px;">8. На каких устройствах это работает?</b>
+                    <p>Плагин работает на устройствах под управлением Android и Windows/macOS с клиентами, поддерживающими модули ExtraGram. Подробности есть в нашем Telegram-боте.</p>
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <b style="color: #1e3a8a; font-size: 16px; display: block; margin-bottom: 4px;">9. Что происходит при редактировании?</b>
+                    <p>Если собеседник изменит текст своего сообщения, плагин сохранит как первоначальную версию, так и все последующие правки с отметками времени.</p>
+                </div>
+
+                <div>
+                    <b style="color: #1e3a8a; font-size: 16px; display: block; margin-bottom: 4px;">10. Сколько стоит использование?</b>
+                    <p>Актуальные цены, тарифные планы и действующие акции всегда можно посмотреть в личном кабинете через официального Telegram-бота.</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Скрипты -->
+    <script>
+        // Генерация случайного ID при загрузке страницы
+        window.onload = function() {
+            const randomNum = Math.floor(100000 + Math.random() * 900000); // 6 случайных цифр
+            document.getElementById('random-id').innerText = '#' + randomNum;
+        };
+
+        const sideMenu = document.getElementById('side-menu');
+        
+        // Открытие/закрытие бокового меню
+        function toggleMenu() {
+            sideMenu.classList.toggle('active');
+        }
+
+        // Закрытие меню при клике вне его
+        document.addEventListener('click', function(event) {
+            const isClickInsideMenu = sideMenu.contains(event.target);
+            const isClickOnBurger = document.getElementById('burger-btn').contains(event.target);
+            
+            if (!isClickInsideMenu && !isClickOnBurger && sideMenu.classList.contains('active')) {
+                sideMenu.classList.remove('active');
+            }
+        });
+
+        // Открытие модальных окон
+        function openModal(modalId) {
+            sideMenu.classList.remove('active');
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        // Закрытие модального окна по клику на фон
+        function closeModal(event, modalId) {
+            if (event.target.id === modalId) {
+                document.getElementById(modalId).classList.remove('active');
+            }
+        }
+
+        // Закрытие модального окна по крестику
+        function closeModalBtn(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+    </script>
+</body>
+</html>
